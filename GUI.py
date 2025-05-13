@@ -177,7 +177,7 @@ def move_handler(row, col):
     gui.draw_stones()
 
     if checkWinner(board, current_player):
-        messagebox.showinfo("Game Over", f"{'AI' if current_player == player2 else 'Player'} ({current_player}) wins!")
+        messagebox.showinfo("Game Over", f"{'AI' if current_player == player2 and mode=='ai' else 'Player'} ({current_player}) wins!")
         gui.canvas.unbind("<Button-1>")
         return
 
