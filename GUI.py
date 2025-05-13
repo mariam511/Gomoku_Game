@@ -9,14 +9,14 @@ STONE_RADIUS = CELL_SIZE // 2 - 2
 root = tk.Tk()
 root.withdraw()
 
-# Ask size
+# Get Size From User
 while True:
     getSize = simpledialog.askstring("Gomoku Size", "Enter Gomoku Size (15 or 19):")
     if getSize in ['15', '19']:
         gomokuSize = int(getSize)
         break
     else:
-        messagebox.showerror("Invalid Input", "Please enter size 15 or 19 only.")
+        messagebox.showerror("Invalid Input", "Please enter size 15 or 19 only ^_^ ")
 
 # Ask mode
 while True:
@@ -41,7 +41,13 @@ current_player = player1
 
 # Game setup
 def InitializeGomoku():
-    return [['*' for _ in range(gomokuSize)] for _ in range(gomokuSize)]
+    gomokuBoard = []
+    for i in range(gomokuSize):
+        row = []
+        for j in range(gomokuSize):
+            row.append('*')
+        gomokuBoard.append(row)
+    return gomokuBoard
 
 def playerChoice(p):
     return 'B' if p == 'W' else 'W'
@@ -51,19 +57,52 @@ def checkWinner(goBoard, player):
         for col in range(gomokuSize):
             if goBoard[row][col] != player:
                 continue
-            if col <= gomokuSize - 5 and all(goBoard[row][col + k] == player for k in range(5)):
-                return True
-            if row <= gomokuSize - 5 and all(goBoard[row + k][col] == player for k in range(5)):
-                return True
-            if row <= gomokuSize - 5 and col <= gomokuSize - 5 and all(goBoard[row + k][col + k] == player for k in range(5)):
-                return True
-            if row <= gomokuSize - 5 and col >= 4 and all(goBoard[row + k][col - k] == player for k in range(5)):
-                return True
-    return False
+            # Check Horizontal
+            if col <= gomokuSize - 5:
+                win = True
+                for k in range(5):
+                    if goBoard[row][col + k] != player:
+                        win = False
+                        break
+                if win: 
+                    return True
+                
+            # Check Vertical
+            if row <= gomokuSize - 5:
+                win = True
+                for k in range(5):
+                    if goBoard[row + k][col] != player:
+                        win = False
+                        break
+                if win: 
+                    return True
+                
+            # Check Diagonal
+            if row <= gomokuSize - 5 and col <= gomokuSize - 5:
+                win = True
+                for k in range(5):
+                    if goBoard[row + k][col + k] != player:
+                        win = False
+                        break
+                if win: 
+                    return True
+                
+            # Check reverse Diagonal
+            if row <= gomokuSize - 5  and col >= 4:
+                win = True
+                for k in range(5):
+                    if goBoard[row + k][col - k] != player:
+                        win = False
+                        break
+                if win: 
+                    return True
 
 def checkDraw(goBoard):
-    return all(cell != '*' for row in goBoard for cell in row)
-
+    for row in goBoard:
+        for cell in row:
+            if cell == '*':
+                return False
+    return True
 # Minimax logic
 def evaluate(board, player):
     opponent = playerChoice(player)
@@ -87,6 +126,25 @@ def evaluate(board, player):
                     return -1000
     return 0
 
+# Get Smart Move return nearest empty positions 5 * 5 gride
+def smartMove(goBoard):
+    positions = set()
+    for i in range(gomokuSize):
+        for j in range(gomokuSize):
+            if goBoard[i][j] != '*':
+                for x in range(-2,3):
+                    for y in range(-2,3):
+                        Posi = i + x 
+                        Posj = j + y
+                        if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
+                            positions.add((Posi,Posj))
+    if len(positions) == 0:
+        centerPos = gomokuSize // 2
+        return {(centerPos, centerPos)}
+    else:
+        return positions
+
+
 def minimax(board, depth, maximizing, player):
     if checkWinner(board, 'B'):
         return 1000 if player == 'B' else -1000
@@ -98,27 +156,27 @@ def minimax(board, depth, maximizing, player):
     opponent = playerChoice(player)
     best = -math.inf if maximizing else math.inf
 
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if board[i][j] == '*':
-                board[i][j] = player if maximizing else opponent
-                value = minimax(board, depth - 1, not maximizing, player)
-                board[i][j] = '*'
-                best = max(best, value) if maximizing else min(best, value)
+    # Loop inside Positions from SmartMove to reduce time to get decition
+    for i,j in smartMove(board):
+        board[i][j] = player if maximizing else opponent
+        value = minimax(board, depth - 1, not maximizing, player)
+        board[i][j] = '*'
+        if maximizing:
+            best = max(best, value)
+        else:
+            best = min(best, value)
     return best
-
+# AI Move
 def bestMove(board, player, depth=2):
     best_score = -math.inf
     move = (-1, -1)
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if board[i][j] == '*':
-                board[i][j] = player
-                score = minimax(board, depth - 1, False, player)
-                board[i][j] = '*'
-                if score > best_score:
-                    best_score = score
-                    move = (i, j)
+    for i,j in smartMove(board):
+        board[i][j] = player
+        score = minimax(board, depth - 1, False, player)
+        board[i][j] = '*'
+        if score > best_score:
+            best_score = score
+            move = (i, j)
     return move
 
 # GUI class

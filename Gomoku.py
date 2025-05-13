@@ -109,7 +109,6 @@ def checkDraw(goBoard):
 def evaluate(board, player):
     opponent = playerChoice(player)
     score = 0
-
     def count_sequence(r, c, dr, dc, symbol):
         count = 0
         for _ in range(5):
@@ -118,7 +117,6 @@ def evaluate(board, player):
             r += dr
             c += dc
         return count
-
     directions = [(0,1), (1,0), (1,1), (1,-1)]
     for row in range(gomokuSize):
         for col in range(gomokuSize):
@@ -129,7 +127,25 @@ def evaluate(board, player):
                     return -1000
     return score
 
+# Get Smart Move return nearest empty positions 5 * 5 gride
+def smartMove(goBoard):
+    positions = set()
+    for i in range(gomokuSize):
+        for j in range(gomokuSize):
+            if goBoard[i][j] != '*':
+                for x in range(-2,3):
+                    for y in range(-2,3):
+                        Posi = i + x 
+                        Posj = j + y
+                        if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
+                            positions.add((Posi,Posj))
+    if len(positions) == 0:
+        centerPos = gomokuSize // 2
+        return {(centerPos, centerPos)}
+    else:
+        return positions
 
+    
 # Minimax Algorithm
 def minimax(board, depth, maximizing, player):
     if checkWinner(board, 'B'):
@@ -141,32 +157,28 @@ def minimax(board, depth, maximizing, player):
 
     opponent = playerChoice(player)
     best = -math.inf if maximizing else math.inf
-
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if board[i][j] == '*':
-                board[i][j] = player if maximizing else opponent
-                value = minimax(board, depth - 1, not maximizing, player)
-                board[i][j] = '*'
-                if maximizing:
-                    best = max(best, value)
-                else:
-                    best = min(best, value)
+    # Loop inside Positions from SmartMove to reduce time to get decition
+    for i,j in smartMove(board):
+        board[i][j] = player if maximizing else opponent
+        value = minimax(board, depth - 1, not maximizing, player)
+        board[i][j] = '*'
+        if maximizing:
+            best = max(best, value)
+        else:
+            best = min(best, value)
     return best
 
 # Best Move for AI
 def bestMove(board, player, depth=2):
     best_score = -math.inf
     move = (-1, -1)
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if board[i][j] == '*':
-                board[i][j] = player
-                score = minimax(board, depth - 1, False, player)
-                board[i][j] = '*'
-                if score > best_score:
-                    best_score = score
-                    move = (i, j)
+    for i,j in smartMove(board):
+        board[i][j] = player
+        score = minimax(board, depth - 1, False, player)
+        board[i][j] = '*'
+        if score > best_score:
+            best_score = score
+            move = (i, j)
     return move
 
 # Main Game Loop
