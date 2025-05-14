@@ -180,7 +180,7 @@ def bestMove(board, player, depth=2):
             best_score = score
             move = (i, j)
     return move
-
+# # Alpha-beta Algorithm
 #minimax_alpha_beta algorithm
 def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
     if checkWinner(node, 'B'):
@@ -235,13 +235,21 @@ def bestMove_alpha_beta(board, player, depth=2):
 # Main Game Loop
 def startGame():
     board = InitializeGomoku()
-
     while True:
-        mode = input("Choose game mode: 'HumanVsAi' or 'AIvsAI': ").strip().lower()
-        if mode in ['humanvsai', 'aivsai']:
+        mode = input("Choose game mode: 'HumanVsAi' or 'AIvsAI' or 'HumanVSHuman': ").strip().lower()
+        if mode in ['humanvsai', 'aivsai','humanvshuman']:
             break
         else:
-            print("Invalid input. Please type 'HumanVsAi' or 'AIvsAI'.")
+            print("Invalid input. Please type 'HumanVsAi' or 'AIvsAI'or 'HumanVSHuman'.")
+    # Ask To Choose AI
+    chooseAI = None
+    if mode == 'humanvsai':
+        while True:
+            chooseAI = input("Choose which AI to play against (Minmax OR alpha-beta): ").strip().lower()
+            if chooseAI in ['minmax', 'alpha-beta']:
+                break
+            else:
+                print("Invalid choice. Please enter 'Minmax' or 'alpha-beta'.")
 
     while True:
         player1 = input("Choose your symbol for player 1(B or W): ").strip().upper()
@@ -257,15 +265,29 @@ def startGame():
 
     while True:
         drawGomoku(board)
+        if mode == 'humanvshuman':
+            if current_player == player1:
+                print("Player 1's Turn:")
+                getMove(board, current_player)
+            else:
+                print("Player 2's Turn:")
+                getMove(board, current_player)
+        chooseAI = None
         if mode == 'humanvsai':
             if current_player == player1:
                 print("Player 1's Turn:")
                 getMove(board, current_player)
             else:
-                print("AI is thinking...")
-                row, col = bestMove(board, current_player)
-                board[row][col] = current_player
-                print(f"AI played at ({row},{col})")
+                if chooseAI == 'minmax':
+                    print("MinMax is thinking...")
+                    row, col = bestMove(board, current_player)
+                    board[row][col] = current_player
+                    print(f"Minmax played at ({row},{col})")
+                else:
+                    print("Alpha-beta is thinking...")
+                    row, col = bestMove_alpha_beta(board, current_player)
+                    board[row][col] = current_player
+                    print(f"Alpha-beta played at ({row},{col})")
         else:  # AI vs AI
             if current_player == player1:
                 print("Minimax AI's Turn:")
