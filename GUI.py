@@ -106,7 +106,8 @@ def checkDraw(goBoard):
 # Minimax logic
 def evaluate(board, player):
     opponent = playerChoice(player)
-    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    score = 0
+    directions = [(0,1), (1,0), (1,1), (1,-1)]
 
     def count_sequence(r, c, dr, dc, symbol):
         count = 0
@@ -120,29 +121,50 @@ def evaluate(board, player):
     for row in range(gomokuSize):
         for col in range(gomokuSize):
             for dr, dc in directions:
-                if count_sequence(row, col, dr, dc, player) == 5:
-                    return 1000
-                if count_sequence(row, col, dr, dc, opponent) == 5:
-                    return -1000
-    return 0
+                my_count = count_sequence(row, col, dr, dc, player)
+                op_count = count_sequence(row, col, dr, dc, opponent)
+                if my_count == 5:
+                    score += 100000
+                elif my_count == 4:
+                    score += 10000
+                elif my_count == 3:
+                    score += 1000
+                elif my_count == 2:
+                    score += 100
+                if op_count == 5:
+                    score -= 100000
+                elif op_count == 4:
+                    score -= 10000
+                elif op_count == 3:
+                    score -= 1000
+                elif op_count == 2:
+                    score -= 100
+    return score
 
 # Get Smart Move return nearest empty positions 5 * 5 gride
-def smartMove(goBoard):
+def smartMove(goBoard, last_move=None):
     positions = set()
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if goBoard[i][j] != '*':
-                for x in range(-2,3):
-                    for y in range(-2,3):
-                        Posi = i + x 
-                        Posj = j + y
-                        if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
-                            positions.add((Posi,Posj))
-    if len(positions) == 0:
-        centerPos = gomokuSize // 2
-        return {(centerPos, centerPos)}
+    if last_move:
+        last_row, last_col = last_move
+        for i in range(last_row - 2, last_row + 3):
+            for j in range(last_col - 2, last_col + 3):
+                if 0 <= i < gomokuSize and 0 <= j < gomokuSize and goBoard[i][j] == '*':
+                    positions.add((i,j))
     else:
-        return positions
+        # Fallback to general scan
+        for i in range(gomokuSize):
+            for j in range(gomokuSize):
+                if goBoard[i][j] != '*':
+                    for x in range(-2,3):
+                        for y in range(-2,3):
+                            Posi = i + x 
+                            Posj = j + y
+                            if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
+                                positions.add((Posi,Posj))
+    if not positions:
+        center = gomokuSize // 2
+        return {(center, center)}
+    return positions
 
 
 def minimax(board, depth, maximizing, player):
@@ -167,10 +189,10 @@ def minimax(board, depth, maximizing, player):
             best = min(best, value)
     return best
 # AI Move
-def bestMove(board, player, depth=2):
+def bestMove(board, player, depth=2, last_move=None):
     best_score = -math.inf
     move = (-1, -1)
-    for i,j in smartMove(board):
+    for i,j in smartMove(board, last_move):
         board[i][j] = player
         score = minimax(board, depth - 1, False, player)
         board[i][j] = '*'
