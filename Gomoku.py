@@ -216,7 +216,7 @@ def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
                 break
         return bestVal
 
-def bestMove_alpha_beta(board, player, depth=2):
+def bestMove_alpha_beta(board, player, depth=4):
     best_score = -math.inf
     move = (-1, -1)
     alpha = -math.inf
