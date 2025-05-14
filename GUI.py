@@ -9,6 +9,9 @@ STONE_RADIUS = CELL_SIZE // 2 - 2
 root = tk.Tk()
 root.withdraw()
 
+def playerChoice(p):
+    return 'B' if p == 'W' else 'W'
+
 # Get Size From User
 while True:
     getSize = simpledialog.askstring("Gomoku Size", "Enter Gomoku Size (15 or 19):")
@@ -18,14 +21,23 @@ while True:
     else:
         messagebox.showerror("Invalid Input", "Please enter size 15 or 19 only ^_^ ")
 
-# Ask mode
 while True:
-    mode = simpledialog.askstring("Game Mode", "Choose game mode: Human or AI")
-    if mode and mode.lower() in ['human', 'ai']:
+    mode = simpledialog.askstring("Choose Game Mode", "Choose game mode: 'HumanVsAi' or 'AIvsAI' or 'HumanVSHuman':")
+    if mode and mode.lower() in ['humanvsai', 'aivsai','humanvshuman']:
         mode = mode.lower()
         break
     else:
-        messagebox.showerror("Invalid Input", "Please enter 'Human' or 'AI'.")
+        messagebox.showerror("Invalid input. Please type 'HumanVsAi' or 'AIvsAI'or 'HumanVSHuman'.")
+        
+# Ask To Choose AI
+chooseAI = None
+if mode == 'humanvsai':
+    while True:
+        chooseAI = simpledialog.askstring("Choose AI", "Choose which AI to play against (Minimax OR Alpha-beta): ")
+        if chooseAI and chooseAI.lower() in ['minimax', 'alpha-beta']:
+            chooseAI = chooseAI.lower()
+            break
+
 
 # Ask player symbol
 while True:
@@ -36,7 +48,8 @@ while True:
     else:
         messagebox.showerror("Invalid Input", "Please enter B or W.")
 
-player2 = 'B' if player1 == 'W' else 'W'
+player2 = playerChoice(player1)
+# player2 = 'B' if player1 == 'W' else 'W'
 current_player = player1
 
 # Game setup
@@ -48,9 +61,6 @@ def InitializeGomoku():
             row.append('*')
         gomokuBoard.append(row)
     return gomokuBoard
-
-def playerChoice(p):
-    return 'B' if p == 'W' else 'W'
 
 def checkWinner(goBoard, player):
     for row in range(gomokuSize):
@@ -200,6 +210,56 @@ def bestMove(board, player, depth=2, last_move=None):
             best_score = score
             move = (i, j)
     return move
+# Alpha-beta Algorithm
+#minimax_alpha_beta algorithm
+def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
+    if checkWinner(node, 'B'):
+        return 1000 if player == 'B' else -1000
+    if checkWinner(node, 'W'):
+        return 1000 if player == 'W' else -1000
+    if checkDraw(node) or depth == 0:
+        return evaluate(node, player)
+
+    opponent = playerChoice(player)
+
+    if isMaximizingPlayer:
+        bestVal = -math.inf
+        for row, col in smartMove(node):  
+            node[row][col] = player
+            value =  minimax_alpha_beta(node, depth -1, False, alpha, beta, player)
+            node[row][col] = '*'
+            bestVal = max(bestVal, value)
+            alpha = max(alpha, bestVal)
+            if beta <= alpha:
+                break
+        return bestVal
+
+    else:
+        bestVal = math.inf
+        for row, col in smartMove(node): 
+            node[row][col] = opponent
+            value = minimax_alpha_beta(node, depth - 1, True, alpha, beta, player)
+            node[row][col] = '*'
+            bestVal = min(bestVal, value)
+            beta = min(beta, bestVal)
+            if beta <= alpha:
+                break
+        return bestVal
+
+def bestMove_alpha_beta(board, player, depth=2):
+    best_score = -math.inf
+    move = (-1, -1)
+    alpha = -math.inf
+    beta = math.inf
+    for i, j in smartMove(board):
+        board[i][j] = player
+        score = minimax_alpha_beta(board, depth - 1, False, alpha, beta, player)
+        board[i][j] = '*'
+        if score > best_score:
+            best_score = score
+            move = (i, j)
+        alpha = max(alpha, best_score)
+    return move
 
 # GUI class
 class GomokuGUI:
@@ -250,14 +310,17 @@ def move_handler(row, col):
     if board[row][col] != '*':
         return
 
-    if mode == 'ai' and current_player != player1:
+    if mode == 'humanvsai' and current_player != player1:
+        return
+    
+    if mode == 'aivsai':
         return
 
     board[row][col] = current_player
     gui.draw_stones()
 
     if checkWinner(board, current_player):
-        messagebox.showinfo("Game Over", f"{'AI' if current_player == player2 and mode=='ai' else 'Player'} ({current_player}) wins!")
+        messagebox.showinfo("Game Over", f" Player ({current_player}) wins!")
         gui.canvas.unbind("<Button-1>")
         return
 
@@ -268,12 +331,29 @@ def move_handler(row, col):
 
     current_player = playerChoice(current_player)
 
-    if mode == 'ai' and current_player == player2:
+    if mode == 'humanvsai' and current_player == player2:
         gui.root.after(100, ai_move)
 
 def ai_move():
     global current_player, gui
-    row, col = bestMove(board, current_player)
+    
+    if chooseAI == 'minimax':
+        if current_player == player1:
+            row, col = bestMove(board, current_player)  # Minimax
+        else:
+            row, col = bestMove(board, current_player)  # Minimax for player2 as well
+    elif chooseAI == 'alpha-beta':
+        if current_player == player1:
+            row, col = bestMove_alpha_beta(board, current_player)  # Alpha-Beta
+        else:
+            row, col = bestMove_alpha_beta(board, current_player)
+            
+
+    if current_player == player1:
+        row, col = bestMove(board, current_player)  # Minimax
+    else:
+        row, col = bestMove_alpha_beta(board, current_player) # Alpha-Beta
+    
     board[row][col] = current_player
     gui.draw_stones()
 
@@ -288,10 +368,19 @@ def ai_move():
         return
 
     current_player = playerChoice(current_player)
+    
+    if mode == 'aivsai':
+        gui.root.after(300, ai_move)
 
 # Start GUI
 root = tk.Tk()
 root.title("Gomoku Game")
 gui = GomokuGUI(root, gomokuSize, board, move_handler)
+if mode == 'humanvsai' and current_player == player2:
+    gui.root.after(1000, ai_move)
 root.deiconify()
+
+if mode == 'aivsai':
+    gui.canvas.unbind("<Button-1>")
+    gui.root.after(1000, ai_move)
 root.mainloop()
