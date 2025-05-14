@@ -168,7 +168,7 @@ def minimax(board, depth, maximizing, player):
             best = min(best, value)
     return best
 
-# Best Move for AI
+# Best Move for AI minimax
 def bestMove(board, player, depth=2):
     best_score = -math.inf
     move = (-1, -1)
@@ -181,19 +181,70 @@ def bestMove(board, player, depth=2):
             move = (i, j)
     return move
 
+#minimax_alpha_beta algorithm
+def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
+    if checkWinner(node, 'B'):
+        return 1000 if player == 'B' else -1000
+    if checkWinner(node, 'W'):
+        return 1000 if player == 'W' else -1000
+    if checkDraw(node) or depth == 0:
+        return evaluate(node, player)
+
+    opponent = playerChoice(player)
+
+    if isMaximizingPlayer:
+        bestVal = -math.inf
+        for row, col in smartMove(node):  
+            node[row][col] = player
+            value =  minimax_alpha_beta(node, depth -1, False, alpha, beta, player)
+            node[row][col] = '*'
+            bestVal = max(bestVal, value)
+            alpha = max(alpha, bestVal)
+            if beta <= alpha:
+                break
+        return bestVal
+
+    else:
+        bestVal = math.inf
+        for row, col in smartMove(node): 
+            node[row][col] = opponent
+            value = minimax_alpha_beta(node, depth - 1, True, alpha, beta, player)
+            node[row][col] = '*'
+            bestVal = min(bestVal, value)
+            beta = min(beta, bestVal)
+            if beta <= alpha:
+                break
+        return bestVal
+
+def bestMove_alpha_beta(board, player, depth=2):
+    best_score = -math.inf
+    move = (-1, -1)
+    alpha = -math.inf
+    beta = math.inf
+    for i, j in smartMove(board):
+        board[i][j] = player
+        score = minimax_alpha_beta(board, depth - 1, False, alpha, beta, player)
+        board[i][j] = '*'
+        if score > best_score:
+            best_score = score
+            move = (i, j)
+        alpha = max(alpha, best_score)
+    return move
+
+
 # Main Game Loop
 def startGame():
     board = InitializeGomoku()
-        # Ask first player to choose Human vs Human or Human vs AI
-    while True:
-        mode = input("Choose game mode: 'Human' or 'AI': ").strip().lower()
-        if mode in ['human', 'ai']:
-            break
-        else:
-            print("Invalid input. Please type 'Human' or 'AI'.")
 
     while True:
-        player1 = input("Player 1, choose your symbol (B or W): ").strip().upper()
+        mode = input("Choose game mode: 'HumanVsAi' or 'AIvsAI': ").strip().lower()
+        if mode in ['humanvsai', 'aivsai']:
+            break
+        else:
+            print("Invalid input. Please type 'HumanVsAi' or 'AIvsAI'.")
+
+    while True:
+        player1 = input("Choose your symbol for player 1(B or W): ").strip().upper()
         if player1 in ['B', 'W']:
             break
         else:
@@ -206,27 +257,28 @@ def startGame():
 
     while True:
         drawGomoku(board)
-        if current_player == player1:
-            print("Player 1's Turn:")
-            getMove(board, current_player)
-        else:
-            if mode == 'human':
-                print("Player 2's Turn:")
+        if mode == 'humanvsai':
+            if current_player == player1:
+                print("Player 1's Turn:")
                 getMove(board, current_player)
             else:
                 print("AI is thinking...")
                 row, col = bestMove(board, current_player)
                 board[row][col] = current_player
                 print(f"AI played at ({row},{col})")
+        else:  # AI vs AI
+            if current_player == player1:
+                print("Minimax AI's Turn:")
+                row, col = bestMove(board, current_player)
+            else:
+                print("Alpha-Beta AI's Turn:")
+                row, col = bestMove_alpha_beta(board, current_player)
+            board[row][col] = current_player
+            print(f"{current_player} AI played at ({row},{col})")
 
         if checkWinner(board, current_player):
             drawGomoku(board)
-            if current_player == player1:
-                print(f"Player 1 ({player1}) wins!")
-            elif mode == 'human':
-                print(f"Player 2 ({player2}) wins!")
-            else:
-                print(f"AI ({player2}) wins!")
+            print(f"{current_player} wins!")
             break
 
         if checkDraw(board):
