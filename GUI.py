@@ -113,43 +113,53 @@ def checkDraw(goBoard):
             if cell == '*':
                 return False
     return True
-# Minimax logic
 def evaluate(board, player):
     opponent = playerChoice(player)
     score = 0
+    size = len(board)
     directions = [(0,1), (1,0), (1,1), (1,-1)]
 
-    def count_sequence(r, c, dr, dc, symbol):
-        count = 0
-        for _ in range(5):
-            if 0 <= r < gomokuSize and 0 <= c < gomokuSize and board[r][c] == symbol:
-                count += 1
-            r += dr
-            c += dc
-        return count
+    def evaluate_line(r, c, dr, dc):
+        nonlocal score
+        player_count = 0
+        opponent_count = 0
+        empty_count = 0
+        for i in range(5):
+            nr, nc = r + i * dr, c + i * dc
+            if not (0 <= nr < size and 0 <= nc < size):
+                return
+            if board[nr][nc] == player:
+                player_count += 1
+            elif board[nr][nc] == opponent:
+                opponent_count += 1
+            else:
+                empty_count += 1
+        if player_count > 0 and opponent_count > 0:
+            return  
+        if player_count == 5:
+            score += 100000
+        elif player_count == 4 and empty_count == 1:
+            score += 10000
+        elif player_count == 3 and empty_count == 2:
+            score += 1000
+        elif player_count == 2 and empty_count == 3:
+            score += 100
+        elif opponent_count == 5:
+            score -= 100000
+        elif opponent_count == 4 and empty_count == 1:
+            score -= 9000
+        elif opponent_count == 3 and empty_count == 2:
+            score -= 800
+        elif opponent_count == 2 and empty_count == 3:
+            score -= 80
 
-    for row in range(gomokuSize):
-        for col in range(gomokuSize):
+    for r in range(size):
+        for c in range(size):
             for dr, dc in directions:
-                my_count = count_sequence(row, col, dr, dc, player)
-                op_count = count_sequence(row, col, dr, dc, opponent)
-                if my_count == 5:
-                    score += 100000
-                elif my_count == 4:
-                    score += 10000
-                elif my_count == 3:
-                    score += 1000
-                elif my_count == 2:
-                    score += 100
-                if op_count == 5:
-                    score -= 100000
-                elif op_count == 4:
-                    score -= 10000
-                elif op_count == 3:
-                    score -= 1000
-                elif op_count == 2:
-                    score -= 100
+                evaluate_line(r, c, dr, dc)
     return score
+
+
 
 # Get Smart Move return nearest empty positions 5 * 5 gride
 def smartMove(goBoard, last_move=None):
@@ -210,7 +220,28 @@ def bestMove(board, player, depth=2, last_move=None):
             best_score = score
             move = (i, j)
     return move
-# Alpha-beta Algorithm
+# # # Alpha-beta Algorithm
+
+# ordering moves according to their priorities
+def orderedMoves(board):
+    size = len(board)
+    empty_cells = []
+    for row in range(size):
+        for col in range(size):
+            if board[row][col] == '*':
+                score = 0
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        r, c = row + dr, col + dc
+                        if 0 <= r < size and 0 <= c < size:
+                            if board[r][c] != '*':  
+                                score += 1
+                empty_cells.append(((row, col), score))
+    empty_cells.sort(key=lambda x: -x[1])
+    return [pos for pos, _ in empty_cells]
+
 #minimax_alpha_beta algorithm
 def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
     if checkWinner(node, 'B'):
@@ -219,12 +250,12 @@ def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
         return 1000 if player == 'W' else -1000
     if checkDraw(node) or depth == 0:
         return evaluate(node, player)
-
+    
     opponent = playerChoice(player)
 
     if isMaximizingPlayer:
         bestVal = -math.inf
-        for row, col in smartMove(node):  
+        for row, col in orderedMoves(node):  
             node[row][col] = player
             value =  minimax_alpha_beta(node, depth -1, False, alpha, beta, player)
             node[row][col] = '*'
@@ -236,7 +267,7 @@ def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
 
     else:
         bestVal = math.inf
-        for row, col in smartMove(node): 
+        for row, col in orderedMoves(node): 
             node[row][col] = opponent
             value = minimax_alpha_beta(node, depth - 1, True, alpha, beta, player)
             node[row][col] = '*'
@@ -245,13 +276,14 @@ def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
             if beta <= alpha:
                 break
         return bestVal
-
+    
+#best move minimax_alpha_beta 
 def bestMove_alpha_beta(board, player, depth=2):
     best_score = -math.inf
     move = (-1, -1)
     alpha = -math.inf
     beta = math.inf
-    for i, j in smartMove(board):
+    for i, j in orderedMoves(board):
         board[i][j] = player
         score = minimax_alpha_beta(board, depth - 1, False, alpha, beta, player)
         board[i][j] = '*'

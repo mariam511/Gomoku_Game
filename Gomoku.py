@@ -208,6 +208,8 @@ def bestMove(board, player, depth=2):
 
 
 # # #Alpha-beta Algorithm
+
+# ordering moves according to their priorities
 def orderedMoves(board):
     size = len(board)
     empty_cells = []
