@@ -151,72 +151,6 @@ def evaluate(board, player):
                 evaluate_line(r, c, dr, dc)
     return score
 
-
-# Get Smart Move return nearest empty positions 5 * 5 gride
-def smartMove(goBoard, last_move=None):
-    positions = set()
-    if last_move:
-        last_row, last_col = last_move
-        for i in range(last_row - 2, last_row + 3):
-            for j in range(last_col - 2, last_col + 3):
-                if 0 <= i < gomokuSize and 0 <= j < gomokuSize and goBoard[i][j] == '*':
-                    positions.add((i,j))
-    else:
-        # Fallback to general scan
-        for i in range(gomokuSize):
-            for j in range(gomokuSize):
-                if goBoard[i][j] != '*':
-                    for x in range(-2,3):
-                        for y in range(-2,3):
-                            Posi = i + x 
-                            Posj = j + y
-                            if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
-                                positions.add((Posi,Posj))
-    if not positions:
-        center = gomokuSize // 2
-        return {(center, center)}
-    return positions
-
-
-# Gomoku Game with Human vs Human or Human vs AI (Minimax) (Josiane Usama Version)
-# Minimax Algorithm
-def minimax(board, depth, maximizing, player):
-    if checkWinner(board, 'B'):
-        return 1000 if player == 'B' else -1000
-    if checkWinner(board, 'W'):
-        return 1000 if player == 'W' else -1000
-    if checkDraw(board) or depth == 0:
-        return evaluate(board, player)
-
-    opponent = playerChoice(player)
-    best = -math.inf if maximizing else math.inf
-    # Loop inside Positions from SmartMove to reduce time to get decition
-    for i,j in smartMove(board):
-        board[i][j] = player if maximizing else opponent
-        value = minimax(board, depth - 1, not maximizing, player)
-        board[i][j] = '*'
-        if maximizing:
-            best = max(best, value)
-        else:
-            best = min(best, value)
-    return best
-
-# Best Move for AI minimax
-def bestMove(board, player, depth=2):
-    best_score = -math.inf
-    move = (-1, -1)
-    for i,j in smartMove(board):
-        board[i][j] = player
-        score = minimax(board, depth - 1, False, player)
-        board[i][j] = '*'
-        if score > best_score:
-            best_score = score
-            move = (i, j)
-    return move
-
-
-# # #Alpha-beta Algorithm
-
 # ordering moves according to their priorities
 def orderedMoves(board):
     size = len(board)
@@ -237,6 +171,43 @@ def orderedMoves(board):
     empty_cells.sort(key=lambda x: -x[1])
     return [pos for pos, _ in empty_cells]
 
+# Minimax Algorithm
+def minimax(board, depth, maximizing, player):
+    if checkWinner(board, 'B'):
+        return 1000 if player == 'B' else -1000
+    if checkWinner(board, 'W'):
+        return 1000 if player == 'W' else -1000
+    if checkDraw(board) or depth == 0:
+        return evaluate(board, player)
+
+    opponent = playerChoice(player)
+    best = -math.inf if maximizing else math.inf
+    # Loop inside Positions from SmartMove to reduce time to get decition
+    for i,j in orderedMoves(board):
+        board[i][j] = player if maximizing else opponent
+        value = minimax(board, depth - 1, not maximizing, player)
+        board[i][j] = '*'
+        if maximizing:
+            best = max(best, value)
+        else:
+            best = min(best, value)
+    return best
+
+# Best Move for AI minimax
+def bestMove(board, player, depth=2):
+    best_score = -math.inf
+    move = (-1, -1)
+    for i,j in orderedMoves(board):
+        board[i][j] = player
+        score = minimax(board, depth - 1, False, player)
+        board[i][j] = '*'
+        if score > best_score:
+            best_score = score
+            move = (i, j)
+    return move
+
+
+# # #Alpha-beta Algorithm
 #minimax_alpha_beta algorithm
 def minimax_alpha_beta(node, depth, isMaximizingPlayer, alpha, beta, player):
     if checkWinner(node, 'B'):
