@@ -321,6 +321,7 @@ def startGame():
 
     while True:
         drawGomoku(board)
+        
         if mode == 'humanvshuman':
             if current_player == player1:
                 print("Player 1's Turn:")
@@ -328,7 +329,8 @@ def startGame():
             else:
                 print("Player 2's Turn:")
                 getMove(board, current_player)
-        if mode == 'humanvsai':
+                
+        elif mode == 'humanvsai':
             if current_player == player1:
                 print("Player 1's Turn:")
                 getMove(board, current_player)
