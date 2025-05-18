@@ -104,6 +104,7 @@ def checkDraw(goBoard):
             if cell == '*':
                 return False
     return True
+
 def evaluate(board, player):
     opponent = playerChoice(player)
     score = 0
@@ -152,22 +153,29 @@ def evaluate(board, player):
 
 
 # Get Smart Move return nearest empty positions 5 * 5 gride
-def smartMove(goBoard):
+def smartMove(goBoard, last_move=None):
     positions = set()
-    for i in range(gomokuSize):
-        for j in range(gomokuSize):
-            if goBoard[i][j] != '*':
-                for x in range(-2,3):
-                    for y in range(-2,3):
-                        Posi = i + x 
-                        Posj = j + y
-                        if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
-                            positions.add((Posi,Posj))
-    if len(positions) == 0:
-        centerPos = gomokuSize // 2
-        return {(centerPos, centerPos)}
+    if last_move:
+        last_row, last_col = last_move
+        for i in range(last_row - 2, last_row + 3):
+            for j in range(last_col - 2, last_col + 3):
+                if 0 <= i < gomokuSize and 0 <= j < gomokuSize and goBoard[i][j] == '*':
+                    positions.add((i,j))
     else:
-        return positions
+        # Fallback to general scan
+        for i in range(gomokuSize):
+            for j in range(gomokuSize):
+                if goBoard[i][j] != '*':
+                    for x in range(-2,3):
+                        for y in range(-2,3):
+                            Posi = i + x 
+                            Posj = j + y
+                            if 0 <= Posi < gomokuSize and 0 <= Posj < gomokuSize and goBoard[Posi][Posj] == '*':
+                                positions.add((Posi,Posj))
+    if not positions:
+        center = gomokuSize // 2
+        return {(center, center)}
+    return positions
 
 
 # Gomoku Game with Human vs Human or Human vs AI (Minimax) (Josiane Usama Version)
@@ -293,8 +301,8 @@ def startGame():
     chooseAI = None
     if mode == 'humanvsai':
         while True:
-            chooseAI = input("Choose which AI to play against (Minmax OR alpha-beta): ").strip().lower()
-            if chooseAI in ['minmax', 'alpha-beta']:
+            chooseAI = input("Choose which AI to play against (Minimax OR alpha-beta): ").strip().lower()
+            if chooseAI in ['minimax', 'alpha-beta']:
                 break
             else:
                 print("Invalid choice. Please enter 'Minmax' or 'alpha-beta'.")
@@ -320,13 +328,12 @@ def startGame():
             else:
                 print("Player 2's Turn:")
                 getMove(board, current_player)
-        chooseAI = None
         if mode == 'humanvsai':
             if current_player == player1:
                 print("Player 1's Turn:")
                 getMove(board, current_player)
             else:
-                if chooseAI == 'minmax':
+                if chooseAI == 'minimax':
                     print("MinMax is thinking...")
                     row, col = bestMove(board, current_player)
                     board[row][col] = current_player
